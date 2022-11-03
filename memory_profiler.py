@@ -1160,10 +1160,16 @@ def load_ipython_extension(ip):
     MemoryProfilerMagics.register_magics(ip)
 
 
-def profile(func=None, stream=None, precision=1, backend='psutil'):
+def profile(func=None, stream=None, precision=1, backend='psutil', ignore_wrapped=False):
     """
     Decorator that will run the function and print a line-by-line profile
     """
+    if ignore_wrapped:
+        # Recursively decend wrapped functions until
+        # reaching an unwrapped function to profile
+        while hasattr(func, '__wrapped__'):
+            func = func.__wrapped__
+
     backend = choose_backend(backend)
     if backend == 'tracemalloc' and has_tracemalloc:
         if not tracemalloc.is_tracing():
@@ -1193,7 +1199,7 @@ def profile(func=None, stream=None, precision=1, backend='psutil'):
     else:
         def inner_wrapper(f):
             return profile(f, stream=stream, precision=precision,
-                           backend=backend)
+                           backend=backend, ignore_wrapped=ignore_wrapped)
 
         return inner_wrapper
 
